@@ -70,9 +70,10 @@ def remove_chastisements(child_name):
 
 
 def fix_marks(child_name):
-    schoolkid = get_schoolkid_by_name(child_name)  
-    bad_marks = Mark.objects.filter(schoolkid=schoolkid, points__in=[2, 3])
-    bad_marks.update(points=5)
+    schoolkid = get_schoolkid_by_name(child_name)
+    if schoolkid:
+        bad_marks = Mark.objects.filter(schoolkid=schoolkid, points__in=[2, 3])
+        bad_marks.update(points=5)
 
 
 
