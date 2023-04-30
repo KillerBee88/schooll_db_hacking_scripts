@@ -1,5 +1,6 @@
 import random
 from datacenter.models import Schoolkid, Chastisement, Mark, Commendation, Lesson
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 COMPLIMENTS = [
     'Молодец!',
@@ -34,40 +35,45 @@ COMPLIMENTS = [
     'Теперь у тебя точно все получится!'
 ]
 
+def get_schoolkid_by_name(name):
+    try:
+        return Schoolkid.objects.get(full_name__contains=name)
+    except ObjectDoesNotExist:
+        pass
+    except MultipleObjectsReturned:
+        pass
+
 
 def create_commendation(child_name, subject_title):
-    schoolkid = Schoolkid.objects.get(full_name__contains=child_name)
-    
-    lesson = Lesson.objects.filter(
-        year_of_study=schoolkid.year_of_study,
-        group_letter=schoolkid.group_letter,
-        subject__title=subject_title
+    schoolkid = get_schoolkid_by_name(child_name)
+    if schoolkid:
+        lesson = Lesson.objects.filter(
+            year_of_study=schoolkid.year_of_study,
+            group_letter=schoolkid.group_letter,
+            subject__title=subject_title
         ).order_by('-date').first()
-   
-
-    compliment = random.choice(COMPLIMENTS)
-
-    commendation = Commendation.objects.create(
-        text=compliment,
-        created=lesson.date,
-        schoolkid=schoolkid,
-        subject=lesson.subject,
-        teacher=lesson.teacher,
-    )
+        compliment = random.choice(COMPLIMENTS)
+        commendation = Commendation.objects.create(
+            text=compliment,
+            created=lesson.date,
+            schoolkid=schoolkid,
+            subject=lesson.subject,
+            teacher=lesson.teacher,
+        )
 
 
 def remove_chastisements(child_name):
-    schoolkid = Schoolkid.objects.get(full_name__contains=child_name)
-    chastisements = Chastisement.objects.filter(schoolkid=schoolkid)
-    chastisements.delete()
+    schoolkid = get_schoolkid_by_name(child_name)
+    if schoolkid:
+        chastisements = Chastisement.objects.filter(schoolkid=schoolkid)
+        chastisements.delete()
 
 
 def fix_marks(child_name):
-    schoolkid = Schoolkid.objects.get(full_name__contains=child_name)
+    schoolkid = get_schoolkid_by_name(child_name)  
     bad_marks = Mark.objects.filter(schoolkid=schoolkid, points__in=[2, 3])
     bad_marks.update(points=5)
-    for mark in bad_marks:
-        mark.save()
-        
+
+
 
       
